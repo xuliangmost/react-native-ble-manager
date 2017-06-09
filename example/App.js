@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import {
   AppRegistry,
+    Alert,
   StyleSheet,
   Text,
   View,
@@ -41,25 +42,26 @@ export default class App extends Component {
 
   componentDidMount() {
     BleManager.start({showAlert: false, allowDuplicates: false});
-
     bleManagerEmitter.addListener('BleManagerDiscoverPeripheral', this.handleDiscoverPeripheral );
-    bleManagerEmitter.addListener('BleManagerDiscoverPeripheral', this.handleDiscoverPeripheral);
+      //发现设备的回调
+
     bleManagerEmitter.addListener('BleManagerStopScan', this.handleStopScan );
+    //停止搜索的回调
     bleManagerEmitter.addListener('BleManagerDisconnectPeripheral', this.handleDisconnectedPeripheral );
+    //断掉链接的回调
     bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic', this.handleUpdateValueForCharacteristic );
-
-
+    //  write的回调
 
     if (Platform.OS === 'android' && Platform.Version >= 23) {
         PermissionsAndroid.checkPermission(PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION).then((result) => {
             if (result) {
-              console.log("Permission is OK");
+              Alert.alert("Permission is OK");
             } else {
               PermissionsAndroid.requestPermission(PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION).then((result) => {
                 if (result) {
-                  console.log("User accept");
+                  Alert.alert("User accept");
                 } else {
-                  console.log("User refuse");
+                  Alert.alert("User refuse");
                 }
               });
             }
@@ -67,7 +69,7 @@ export default class App extends Component {
     }
   }
 
-  handleDisconnectedPeripheral(data) {
+  handleDisconnectedPeripheral(data) { //断开连接 data.peripheral 是mac地址
     let peripherals = this.state.peripherals;
     let peripheral = peripherals.get(data.peripheral);
     if (peripheral) {
@@ -75,37 +77,38 @@ export default class App extends Component {
       peripherals.set(peripheral.id, peripheral);
       this.setState({peripherals});
     }
-    console.log('Disconnected from ' + data.peripheral);
+    Alert.alert('Disconnected from ' + JSON.stringify(data.peripheral));
   }
 
   handleUpdateValueForCharacteristic(data) {
-    console.log('Received '+ data.value + ' from ' + data.peripheral + ' characteristic ' + data.characteristic);
+   /* Alert.alert('Received '+ data.value + ' from ' + data.peripheral + ' characteristic ' + data.characteristic);*/
+   Alert.alert('Received',JSON.stringify(data))
   }
 
   handleStopScan() {
-    console.log('Scan is stopped');
+    Alert.alert('Scan is stopped');
     this.setState({ scanning: false });
   }
 
-  startScan() {
+  startScan() { //搜索
     if (!this.state.scanning) {
       BleManager.scan([], 3, true).then((results) => {
-        console.log('Scanning...');
+        Alert.alert('Scanning...');
         this.setState({scanning:true});
       });
     }
   }
 
-  handleDiscoverPeripheral(peripheral){
+  handleDiscoverPeripheral(peripheral){ //发现设备
     var peripherals = this.state.peripherals;
     if (!peripherals.has(peripheral.id)){
-      console.log('Got ble peripheral', peripheral);
+      Alert.alert('Got ble peripheral', JSON.stringify(peripheral));
       peripherals.set(peripheral.id, peripheral);
       this.setState({ peripherals })
     }
   }
 
-  test(peripheral) {
+  test(peripheral) {  //连接
     if (peripheral){
       if (peripheral.connected){
         BleManager.disconnect(peripheral.id);
@@ -118,14 +121,14 @@ export default class App extends Component {
             peripherals.set(peripheral.id, p);
             this.setState({peripherals});
           }
-          console.log('Connected to ' + peripheral.id);
+          Alert.alert('Connected to ',JSON.stringify(peripheral));
           this.setTimeout(() => {
 
             BleManager.retrieveServices(peripheral.id).then((peripheralData) => {
-              console.log('Retrieved peripheral services', peripheralData);
+              Alert.alert('Retrieved peripheral services', JSON.stringify(peripheralData));
 
               BleManager.readRSSI(peripheral.id).then((rssi) => {
-                console.log('Retrieved actual RSSI value', rssi);
+                Alert.alert('Retrieved actual RSSI value', JSON.stringify(rssi));
               });
             });
 
@@ -133,12 +136,12 @@ export default class App extends Component {
             /*            
             BleManager.retrieveServices(peripheral.id).then((peripheralInfo) => {
               BleManager.startNotification(peripheral.id, '00035B03-58E6-07DD-021A-08123A000300', '00035B03-58E6-07DD-021A-08123A000301').then(() => {
-                console.log('Started notification on ' + peripheral.id);
+                Alert.alert('Started notification on ' + peripheral.id);
                 this.setTimeout(() => {
 
                 }, 500);
               }).catch((error) => {
-                console.log('Notification error', error);
+                Alert.alert('Notification error', error);
                 reject(error);
               });
             });
@@ -146,7 +149,7 @@ export default class App extends Component {
 
           }, 900);
         }).catch((error) => {
-          console.log('Connection error', error);
+          Alert.alert('Connection error', JSON.stringify(error));
         });
       }
     }
@@ -160,7 +163,7 @@ export default class App extends Component {
     return (
       <View style={styles.container}>
         <TouchableHighlight style={{marginTop: 40,margin: 20, padding:20, backgroundColor:'#ccc'}} onPress={() => this.startScan() }>
-          <Text>Scan Bluetooth ({this.state.scanning ? 'on' : 'off'})</Text>
+          <Text>Scan Bluetooth ({this.state.scanning ? '正在搜索' : '搜索'})</Text>
         </TouchableHighlight>
         <ScrollView style={styles.scroll}>
           {(list.length == 0) &&
